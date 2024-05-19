@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Rectangulo</title>
+     <link rel="stylesheet" href="light.css">
+
+    <style>
+       
+       #myCanvas {
+            border: 2px solid #b0b0b0;
+            border-radius: 15px;
+        }
+    </style>
+</head>
+<body style = "width:1200px; max-width: 1200px;">
+
+
+<div style="display: flex; flex-direction: column;">
+    <div style="display: flex; flex-direction: row; width: 500px; justify-content:space-between;">
+        <div>
+            <h3>Lados rectangulo grande:</h3>
+            <div>        
+                <div>        
+                    Ancho:<input id="grande_ancho" type="number" value="5"> 
+                </div>
+                    <div>        
+                    Largo: <input id="grande_largo" type="number" value="10"> 
+                </div>
+            </div>
+        </div>
+        <div>
+            <h3>Lados rectangulo pequeño:</h3>
+            <div>        
+                <div>        
+                    Ancho:<input id="peque_ancho" type="number" value="1"> 
+                </div>
+                    <div>        
+                    Largo: <input id="peque_largo" type="number" value="2"> 
+                </div>
+            </div>
+        </div>
+
+        
+    </div>
+
+    <div style="display:flex; flex-direction: row; width: 500px; justify-content:space-between;">   
+        <div> delay: <input style = "width: 100px;" id="delay" type="number" value="30">  </div>
+        <div style="display:flex; flex-direction: row; width: 300px; justify-content:center;">     
+            <h3>La cantidad total es: <span id = "cantidad_paneles"  </span></h3>
+        </div>
+    </div>
+<div>
+            <button onclick="calcular()"> calcular </button>
+        </div>
+    <canvas id="myCanvas" width="1200" height="1200" ></canvas>
+
+</div>
+        
+
+    <script>
+        //inicialización canvas
+        var canvas = document.getElementById('myCanvas');
+        var ctx = canvas.getContext('2d');
+
+        //inicialización variables
+        var zoom =60;
+        var coordGrande = [];
+        var coordPeque =[];
+        var inicioGrande = {x: 1, y: 1};
+        var inicioPeque = {x: 1, y: 1}; 
+
+        var pathGrande;
+
+        //función que se llama para calcular desde el botón
+        async function calcular(){
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            obtenerCoordenadasGrande();            
+
+            pathGrande = createFigure(coordGrande,'#AFCBFF','#333333');
+
+            let cantidad = await calculoCuadradoPequeGrande(inicioPeque);
+            let cantidad_paneles =  document.getElementById("cantidad_paneles");
+
+            cantidad_paneles.innerHTML = cantidad;
+
+        }
+    
+        //función para obtener coordenados del rectangulo grande
+        function obtenerCoordenadasGrande() {
+
+            var grandeAncho = parseFloat(document.getElementById('grande_ancho').value);
+            var grandeLargo = parseFloat(document.getElementById('grande_largo').value);
+
+            coordGrande = [
+                inicioGrande,
+                {y: (inicioGrande.y + grandeAncho), x: inicioGrande.x},
+                {y: (inicioGrande.y + grandeAncho), x: (inicioGrande.x + grandeLargo)},
+                {y: inicioGrande.y, x: (inicioGrande.x + grandeLargo)}
+            ];        
+           
+        }
+
+        //función para obtener coordenados de rectangulo pequeño
+        function obtenerCoordenadasPeque(inicioPeque_) {
+
+            var pequeAncho = parseFloat(document.getElementById('peque_ancho').value);
+            var pequeLargo = parseFloat(document.getElementById('peque_largo').value);
+
+            coordPeque = [
+                inicioPeque_,
+                {x: inicioPeque_.x + pequeAncho, y: inicioPeque_.y},
+                {x: inicioPeque_.x + pequeAncho, y: inicioPeque_.y + pequeLargo},
+                {x: inicioPeque_.x, y: inicioPeque_.y + pequeLargo}
+            ];
+
+            return coordPeque;
+
+        }
+
+        //función para obtener coordenados de rectangulo pequeño cambiando la posición del rectangulo pequeño girandolo en 90 grados
+        function obtenerCoordenadasPequeInv(inicioPeque_) {
+
+            var pequeLargo  = parseFloat(document.getElementById('peque_ancho').value);
+            var pequeAncho = parseFloat(document.getElementById('peque_largo').value);
+
+            coordPeque = [
+                inicioPeque_,
+                {x: inicioPeque_.x + pequeAncho, y: inicioPeque_.y},
+                {x: inicioPeque_.x + pequeAncho, y: inicioPeque_.y + pequeLargo},
+                {x: inicioPeque_.x, y: inicioPeque_.y + pequeLargo}
+            ];
+
+            return coordPeque;
+        }
+
+        //función para dibujar la figura en canvas
+        function createFigure(points, colorFill, colorStrock){
+
+            var path = new Path2D();
+
+            points.forEach((e, i) => {
+                if (i == 0) {
+                    path.moveTo(points[0].x * zoom, points[0].y * zoom);
+                } else {
+                    path.lineTo(points[i].x * zoom, points[i].y * zoom);
+                }
+            });
+
+            path.closePath();
+            ctx.fillStyle = colorFill;
+            ctx.fill(path);
+
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = colorStrock;
+            ctx.stroke(path);
+            return path;
+        }
+
+
+        function createFigureRectanglesMin(points, colorFill, colorStrock){
+
+            var pathFill = new Path2D();
+            var pathStrock = new Path2D();
+
+            points.forEach((e, i) => {
+                if (i == 0) {
+                    pathFill.moveTo(points[0].x * zoom, points[0].y * zoom);
+                    pathStrock.moveTo(points[0].x * zoom, points[0].y * zoom);
+                } else {
+                    pathFill.lineTo(points[i].x * zoom, points[i].y * zoom);
+                    pathStrock.lineTo(points[i].x * zoom, points[i].y * zoom);
+                }
+            });
+
+            pathFill.closePath();
+            ctx.fillStyle = colorFill;
+            ctx.fill(pathFill);
+
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = colorStrock;
+            ctx.stroke(pathStrock);
+
+            return pathFill;
+        }
+
+        //función en que se administra las llamadas para detectar las intersecciónes y veces que caben los rectangulos pequeños en el Grande
+        async function calculoCuadradoPequeGrande(inicioPequeInput){
+            
+            let salida = await fillRectangles(inicioPequeInput);
+            let salida2 = await fillRectangles(salida.inicioPequeFilaDownLeft, true);
+            let salida3 = await fillRectangles(salida.inicioPequeFilaUpRight, true);
+
+            let cantidad_paneles = salida.cantidad_paneles + salida2.cantidad_paneles + salida3.cantidad_paneles ;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            pathGrande = createFigure(coordGrande,'#AFCBFF','#333333');
+
+            let salida_inv = await fillRectangles(inicioPequeInput, true);
+            let salida_inv2 = await fillRectangles(salida_inv.inicioPequeFilaDownLeft);
+            let salida_inv3 = await fillRectangles(salida_inv.inicioPequeFilaUpRight);
+
+            let cantidad_paneles_inv = salida_inv.cantidad_paneles + salida_inv2.cantidad_paneles + salida_inv3.cantidad_paneles ;
+
+            console.log(cantidad_paneles);
+            console.log(cantidad_paneles_inv);
+
+            if(cantidad_paneles>cantidad_paneles_inv)
+            {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            pathGrande = createFigure(coordGrande,'#AFCBFF','#333333');
+                let salida = await fillRectangles(inicioPequeInput);
+                let salida2 = await fillRectangles(salida.inicioPequeFilaDownLeft, true);
+                let salida3 = await fillRectangles(salida.inicioPequeFilaUpRight, true);
+
+                return cantidad_paneles; 
+            }
+            else{
+                return cantidad_paneles_inv;
+            }
+
+        }
+
+         //función que detecta las veces que cabe rectangulos pequeño en el triangulo grande en una solo posición
+        async function fillRectangles(inicioPequeInput, isInv = false){
+
+            inicioPeque_ = inicioPequeInput;
+
+            let elem_coordPeque;
+
+            
+
+            let seguir_abajo = true;
+            let detener_abajo = false;
+
+            let cantidad_paneles = 0;
+
+            let inicioPequeFila=inicioPeque_;
+            let inicioPequeFilaUpRight;
+            let inicioPequeFilaDownLeft;
+
+            let contadorCol = 0;
+            contador_exeso = 0;
+
+            while(seguir_abajo){
+
+                inicioPeque_= inicioPequeFila;
+                let seguir_derecha = true;
+                let detener_derecha = false;
+                contadorCol=0;
+
+                while(seguir_derecha){
+
+                    if(isInv){
+                        elem_coordPeque = obtenerCoordenadasPequeInv(inicioPeque_);
+                    }
+                    else{
+                        elem_coordPeque = obtenerCoordenadasPeque(inicioPeque_);
+                    }
+
+                    console.log(elem_coordPeque);
+
+                    elem_coordPeque.forEach(elem=>{
+                        console.log(ctx.isPointInPath(pathGrande,elem.x*zoom, elem.y*zoom));
+                        if(!ctx.isPointInPath(pathGrande,elem.x*zoom, elem.y*zoom))
+                        {
+                            detener_derecha = true;
+                        }
+
+                    });
+
+                    if(!ctx.isPointInPath(pathGrande,elem_coordPeque[3].x*zoom, elem_coordPeque[3].y*zoom))
+                    {
+                        detener_abajo=true;
+                     break;
+                    }                    
+
+                    if(contadorCol==0){
+                        inicioPequeFila = elem_coordPeque[3];
+                    }
+                    
+
+                    if(detener_derecha){
+                        if(inicioPequeFilaUpRight == undefined)
+                            inicioPequeFilaUpRight = elem_coordPeque[0];
+                        break;
+                    }
+
+                    createFigureRectanglesMin(elem_coordPeque,'#ff6961','#e55b50');
+                    await delay();
+
+                    inicioPeque_ = {x: elem_coordPeque[1].x, y: elem_coordPeque[1].y};
+                    contadorCol++;
+                    cantidad_paneles++;
+                    if(cantidad_paneles> 10000) break;
+                }
+
+                if (detener_abajo) break;
+
+                contador_exeso++;
+                if(contador_exeso> 5000) break;
+            }
+
+            console.log(cantidad_paneles);
+
+            return {'inicioPequeFilaDownLeft': inicioPequeFila, 'inicioPequeFilaUpRight':inicioPequeFilaUpRight, 'cantidad_paneles':cantidad_paneles };
+
+        }
+
+        //delay para que se vea como se hacen los calculos
+        function delay() {
+            var d = parseFloat(document.getElementById('delay').value);
+
+            if(d==0 || d==undefined || d==null || d=="") 
+            return null;
+            else
+            return new Promise(resolve => setTimeout(resolve, d));
+        }
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>triangulo</title>
+     <link rel="stylesheet" href="light.css">
+
+    <style>
+       
+       #myCanvas {
+            border: 2px solid #b0b0b0; 
+            border-radius: 15px;
+        }
+    </style>
+</head>
+<body style = "width:1200px; max-width: 1200px;">
+
+
+<div style="display: flex; flex-direction: column;">
+    <div style="display: flex; flex-direction: row; width: 500px; justify-content:space-between;">
+        <div>
+            <h3>Base y altura triangulo:</h3>
+            <div>        
+                <div>        
+                    Altura:<input id="Altura" type="number" value="15"> 
+                </div>
+                    <div>        
+                    Base: <input id="Base" type="number" value="5"> 
+                </div>
+            </div>
+        </div>
+        <div>
+            <h3>Lados rectangulo pequeño:</h3>
+            <div>        
+                <div>        
+                    Ancho:<input id="peque_ancho" type="number" value="0.5"> 
+                </div>
+                    <div>        
+                    Largo: <input id="peque_largo" type="number" value="2"> 
+                </div>
+            </div>
+        </div>
+
+        
+    </div>
+
+    <div style="display:flex; flex-direction: row; width: 500px; justify-content:space-between;">   
+        <div> delay: <input style = "width: 100px;" id="delay" type="number" value="30">  </div>
+        <div style="display:flex; flex-direction: row; width: 300px; justify-content:center;">     
+            <h3>La cantidad total es: <span id = "cantidad_paneles"  </span></h3>
+        </div>
+    </div>
+<div>
+            <button onclick="calcular()"> calcular </button>
+        </div>
+    <canvas id="myCanvas" width="1200" height="1200" ></canvas>
+
+</div>
+        
+
+    <script>
+        //inicialización canvas
+        var canvas = document.getElementById('myCanvas');
+        var ctx = canvas.getContext('2d');
+        var zoom =60;
+
+        //inicialización variables
+        var coordGrande = [];
+        var coordPeque =[];
+
+        var inicioGrande = {x: 1, y: 1};
+        var inicioPeque = {x: 1, y: 1}; 
+        var pathsPeques=[];
+
+        var pathGrande;
+
+
+
+        //función que se llama para calcular desde el botón
+        async function calcular(){
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            obtenerCoordenadasGrande();            
+
+            pathGrande = createFigure(coordGrande,'#AFCBFF','#333333');
+
+            let cantidad = await calculoCuadradoPequeGrande(coordGrande[1]);
+
+            let cantidad_paneles =  document.getElementById("cantidad_paneles");
+
+
+            cantidad_paneles.innerHTML = cantidad;
+
+        }
+
+        //función para obtener coordenados del triangulo grande
+       function obtenerCoordenadasGrande() {
+        
+            var Altura = parseFloat(document.getElementById('Altura').value);
+            var Base = parseFloat(document.getElementById('Base').value);
+
+            coordGrande = [
+                {x: (inicioGrande.x + Base), y: (inicioGrande.y + Altura)},
+                {x: (inicioGrande.x), y: (inicioGrande.y + Altura)},
+                {x: (inicioGrande.x+Base/2), y: (inicioGrande.y)},
+            ]; 
+ 
+            return coordGrande;         
+           
+        }
+
+        //función para obtener coordenados de rectangulo pequeño
+        function obtenerCoordenadasPeque(inicioPeque_) {
+
+            var pequeAncho = parseFloat(document.getElementById('peque_ancho').value);
+            var pequeLargo = parseFloat(document.getElementById('peque_largo').value);
+            var Altura = parseFloat(document.getElementById('Altura').value);
+            var Base = parseFloat(document.getElementById('Base').value);
+
+            coordPeque = [
+                inicioPeque_,
+                {x: inicioPeque_.x + pequeAncho, y: inicioPeque_.y},
+                {x: inicioPeque_.x + pequeAncho, y: inicioPeque_.y + - pequeLargo},
+                {x: inicioPeque_.x, y: inicioPeque_.y - pequeLargo}
+            ];
+
+            return coordPeque;
+        }
+
+        //función para obtener coordenados de rectangulo pequeño cambiando la posición del rectangulo pequeño girandolo en 90 grados
+        function obtenerCoordenadasPequeInv(inicioPeque_) {
+
+            var pequeLargo  = parseFloat(document.getElementById('peque_ancho').value);
+            var pequeAncho = parseFloat(document.getElementById('peque_largo').value);
+
+            coordPeque = [
+                inicioPeque_,
+                {x: inicioPeque_.x + pequeAncho, y: inicioPeque_.y},
+                {x: inicioPeque_.x + pequeAncho, y: inicioPeque_.y - pequeLargo},
+                {x: inicioPeque_.x, y: inicioPeque_.y - pequeLargo}
+            ];
+
+            return coordPeque;
+
+        }
+
+        //función para obtener coordenados de rectangulo pequeño cambiando la posición del rectangulo pequeño con puntos medios para que se detecten intersecciones con otros rectangulos pequeños
+        function obtenerCoordenadasPequeConPuntoMedio(inicioPeque_, inv = false) {
+
+            if(inv){
+                var pequeLargo  = parseFloat(document.getElementById('peque_ancho').value);
+                var pequeAncho = parseFloat(document.getElementById('peque_largo').value);
+            }
+            else{
+                var pequeAncho = parseFloat(document.getElementById('peque_ancho').value);
+                var pequeLargo = parseFloat(document.getElementById('peque_largo').value);
+            }
+
+            var Altura = parseFloat(document.getElementById('Altura').value);
+            var Base = parseFloat(document.getElementById('Base').value);
+
+            coordPeque = [
+                inicioPeque_,
+                {x: inicioPeque_.x + (pequeAncho/2), y: inicioPeque_.y},
+                {x: inicioPeque_.x + pequeAncho, y: inicioPeque_.y},
+                {x: inicioPeque_.x + pequeAncho, y: inicioPeque_.y - (pequeLargo/2)},
+                {x: inicioPeque_.x + pequeAncho, y: inicioPeque_.y - pequeLargo},                
+                {x: inicioPeque_.x + (pequeAncho/2), y: inicioPeque_.y - pequeLargo},
+                {x: inicioPeque_.x, y: inicioPeque_.y - pequeLargo},
+                {x: inicioPeque_.x, y: inicioPeque_.y - (pequeLargo/2)}
+            ];
+
+            return coordPeque;
+        }   
+
+
+        //función para dibujar la figura en canvas
+        function createFigure(points, colorFill, colorStrock){
+
+            var path = new Path2D();
+
+            points.forEach((e, i) => {
+                if (i == 0) {
+                    path.moveTo(points[0].x * zoom, points[0].y * zoom);
+                } else {
+                    path.lineTo(points[i].x * zoom, points[i].y * zoom);
+                }
+            });
+
+            path.closePath();
+
+            ctx.fillStyle = colorFill;
+            ctx.fill(path);
+
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = colorStrock;
+            ctx.stroke(path);
+
+            pathsPeques.push(path);
+
+            return path;
+        }
+
+
+        //función en que se administra las llamadas para detectar las intersecciónes y veces que caben los rectangulos pequeños en el triangulo
+        async function calculoCuadradoPequeGrande(inicioPequeInput){
+
+
+            pathsPeques = [];         
+
+            let salida = await fillRectangles(inicioPequeInput);
+            let salida2 = await fillRectangles(salida.inicioPequeFilaUpLeft, true);
+            let salida3 = await fillRectanglesInVoid(inicioPequeInput, true);
+
+            let cantidad_paneles = salida.cantidad_paneles + salida2.cantidad_paneles + salida3.cantidad_paneles;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            pathGrande = createFigure(coordGrande,'#AFCBFF','#333333');
+            pathsPeques = [];         
+
+            let salida_inv = await fillRectangles(inicioPequeInput, true);
+            let salida_inv2 = await fillRectangles(salida_inv.inicioPequeFilaUpLeft);
+            let salida_inv3 = await fillRectanglesInVoid(inicioPequeInput);       
+
+            let cantidad_paneles_inv = salida_inv.cantidad_paneles + salida_inv2.cantidad_paneles + salida_inv2.cantidad_paneles;
+
+
+            if(cantidad_paneles>cantidad_paneles_inv){
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                pathGrande = createFigure(coordGrande,'#AFCBFF','#333333');
+                pathsPeques = [];         
+
+                let salida = await fillRectangles(inicioPequeInput);
+                let salida2 = await fillRectangles(salida.inicioPequeFilaUpLeft, true);
+                let salida3 = await fillRectanglesInVoid(inicioPequeInput, true);
+
+                let cantidad_paneles = salida.cantidad_paneles + salida2.cantidad_paneles + salida3.cantidad_paneles;
+
+                return cantidad_paneles
+
+            }
+            else{
+
+                return cantidad_paneles_inv;
+
+            }
+
+            
+
+        }
+
+        //función que detecta las veces que cabe rectangulos pequeño en el triangulo grande en una solo posición
+        async function fillRectangles(inicioPequeInput, isInv = false){
+
+            let inicioPeque_ = inicioPequeInput;
+
+            let elem_coordPeque;            
+
+            let seguir_abajo = true;
+            let detener_abajo = false;
+
+            let cantidad_paneles = 0;
+
+            let inicioPequeFila=inicioPeque_;
+            let inicioPequeFilaUpRight;
+            let inicioPequeFilaUpLeft;
+
+            let contadorCol = 0;
+            contador_exeso = 0;
+
+            var Altura = parseFloat(document.getElementById('Altura').value);
+            var Base = parseFloat(document.getElementById('Base').value);
+            var pequeLargo  = parseFloat(document.getElementById('peque_ancho').value);
+            var pequeAncho = parseFloat(document.getElementById('peque_largo').value);
+            var base_frame = Base/1000;
+
+            while(seguir_abajo){
+
+                inicioPeque_= inicioPequeFila;
+                let seguir_derecha = true;
+                let detener_derecha = false;
+                contadorCol=0;
+
+                while(seguir_derecha){
+
+                    
+                    if(isInv){
+
+                        for (var i = 0; i <= 2000; i++) {
+                            if(ctx.isPointInPath(pathGrande, (inicioPeque_.x + base_frame * i) *zoom, (inicioPeque_.y-pequeLargo)*zoom) )                                
+                            {
+ 
+                            inicioPeque_= {x: (inicioPeque_.x + base_frame * i), y:(inicioPeque_.y)};
+                            break;
+
+                            }
+                        }
+
+                        elem_coordPeque = obtenerCoordenadasPequeInv(inicioPeque_);
+                    }
+                    else{
+                        for (var i = 0; i <= 2000; i++) {
+                            if(ctx.isPointInPath(pathGrande, (inicioPeque_.x + base_frame * i) *zoom, (inicioPeque_.y-pequeAncho)*zoom)
+                                )
+                            {
+                            inicioPeque_= {x: (inicioPeque_.x + base_frame * i), y:(inicioPeque_.y)};
+                            break;
+
+                            }
+                        }
+                        elem_coordPeque = obtenerCoordenadasPeque(inicioPeque_);
+                    }
+
+                    elem_coordPeque.forEach(elem=>{
+                        if(!ctx.isPointInPath(pathGrande,elem.x*zoom, elem.y*zoom))
+                        {
+                            detener_derecha = true;
+                        }
+
+                    });
+
+                    if(!ctx.isPointInPath(pathGrande,elem_coordPeque[3].x*zoom, elem_coordPeque[3].y*zoom))
+                    {
+                        detener_abajo=true;
+                     break;
+                    }                    
+
+                    if(contadorCol==0){
+                        //detener_arriba;
+                        inicioPequeFila = elem_coordPeque[3];
+                    }
+                    
+
+                    if(detener_derecha){
+                        if(inicioPequeFilaUpRight == undefined)
+                            inicioPequeFilaUpRight = elem_coordPeque[0];
+                        break;
+                    }
+
+                    if(contadorCol==0){
+                        //detener arriba a la izquierda;
+                        inicioPequeFilaUpLeft = elem_coordPeque[3];
+                    }
+
+                    createFigure(elem_coordPeque,'#ff6961','#e55b50');
+                    await delay();
+
+                    inicioPeque_ = {x: elem_coordPeque[1].x, y: elem_coordPeque[1].y};
+                    contadorCol++;
+                    cantidad_paneles++;
+                    if(cantidad_paneles> 10000) break;
+                }
+
+                if (detener_abajo) break;
+
+                contador_exeso++;
+                if(contador_exeso> 5000) break;
+            }
+
+            return {'inicioPequeFilaUpLeft': inicioPequeFilaUpLeft, 'inicioPequeFilaUpRight':inicioPequeFilaUpRight, 'cantidad_paneles':cantidad_paneles };
+        }
+
+        //función discretizada para llenar los rectangulos que faltan en los espacios vacios
+        async function fillRectanglesInVoid(inicioPequeInput, isInv = false){
+
+            var Altura = parseFloat(document.getElementById('Altura').value);
+            var Base = parseFloat(document.getElementById('Base').value);
+            var pequeLargo  = parseFloat(document.getElementById('peque_ancho').value);
+            var pequeAncho = parseFloat(document.getElementById('peque_largo').value);
+            let elem_coordPeque;
+            let cantidad_paneles=0;
+            let divisiones = 200;
+
+
+            var base_frame = Base/divisiones;
+            var altura_frame = Altura/divisiones;
+            
+            for (var i = 0; i < divisiones; i++) {
+                for (var j = 0; j < divisiones; j++) {
+
+                    let inicioPeque_ = {x:(j*base_frame), y:(i*altura_frame)}
+
+                    if(isInv)
+                        elem_coordPeque = obtenerCoordenadasPequeConPuntoMedio(inicioPeque_,true);
+                    else
+                        elem_coordPeque = obtenerCoordenadasPequeConPuntoMedio(inicioPeque_);
+
+
+                    intersecta_grande = true;
+                    intersecta_otros = false;
+
+                    elem_coordPeque.forEach(elem=>{
+
+                        if(!ctx.isPointInPath(pathGrande,elem.x*zoom, elem.y*zoom))
+                        {
+                            intersecta_grande = false;
+                        }
+
+                        if(isPointInOthersRectangles(elem.x*zoom, elem.y*zoom))
+                        {
+                            intersecta_otros = true;
+                        }
+                    });
+
+                    if(intersecta_grande && !intersecta_otros) {
+                        createFigure(elem_coordPeque,'#ff6961','#e55b50');
+                        cantidad_paneles++;
+                        await delay();
+                    }
+                }
+            }
+
+            return {'cantidad_paneles':cantidad_paneles };
+        }
+
+        function isPointInOthersRectangles( elem_coordPequeX, elem_coordPequeY ){
+
+            let isInOther = false;
+
+            pathsPeques.forEach( elem => {
+
+                inpath = ctx.isPointInPath(elem, elem_coordPequeX, elem_coordPequeY);
+                if (inpath) {isInOther = true;}
+
+            });
+
+            return isInOther;
+
+        }
+
+
+        //delay para que se vea como se hacen los calculos
+        function delay() {
+            var d = parseFloat(document.getElementById('delay').value);
+
+            if(d==0 || d==undefined || d==null || d=="") 
+            return null;
+            else
+            return new Promise(resolve => setTimeout(resolve, d));
+        }
+
+
+
+
+    </script>
+</body>
+</html>
